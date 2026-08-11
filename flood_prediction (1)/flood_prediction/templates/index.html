@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌊 Flood Prediction System</title>
+    
+    <!-- Leaflet CSS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>🌊 AI-Driven Flood Prediction System</h1>
+                    <p>Real-time flood risk assessment using satellite data and machine learning</p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <a href="/notifications" style="position: relative; text-decoration: none; font-size: 32px; color: #667eea;" title="View Notifications">
+                        🔔
+                        <span id="notificationBadge" style="
+                            display: none;
+                            position: absolute;
+                            top: -5px;
+                            right: -5px;
+                            background: #ef4444;
+                            color: white;
+                            border-radius: 50%;
+                            width: 24px;
+                            height: 24px;
+                            font-size: 12px;
+                            font-weight: bold;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            border: 2px solid white;
+                        ">0</span>
+                    </a>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="text-align: right;">
+                            <div style="font-size: 14px; font-weight: 600; color: #333;">👤 {{ user.username }}</div>
+                            <div style="font-size: 12px; color: #666;">{{ user.email }}</div>
+                        </div>
+                        <a href="/logout" style="
+                            display: inline-block;
+                            padding: 8px 16px;
+                            background: #f44336;
+                            color: white;
+                            text-decoration: none;
+                            border-radius: 6px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            transition: background 0.3s;
+                        " onmouseover="this.style.background='#d32f2f'" onmouseout="this.style.background='#f44336'">
+                            Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- About Section -->
+        <div style="
+            background: white;
+            border-radius: 16px;
+            padding: 28px 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border-left: 5px solid #667eea;
+        ">
+            <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #2d3748;">🧭 How This App Works</h2>
+            <p style="margin: 0 0 16px 0; color: #555; line-height: 1.7; font-size: 15px;">
+                This system uses <strong>Google Earth Engine satellite data</strong> combined with a trained 
+                <strong>Random Forest machine learning model</strong> to predict flood risk for any location in real time. 
+                Simply click on the map or enter coordinates to get an instant flood probability score along with 
+                the underlying environmental factors.
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+                <div style="background: #f0f4ff; border-radius: 10px; padding: 14px; display: flex; align-items: flex-start; gap: 10px;">
+                    <span style="font-size: 22px;">📍</span>
+                    <div>
+                        <div style="font-weight: 700; font-size: 14px; color: #333;">Select Location</div>
+                        <div style="font-size: 13px; color: #666; margin-top: 2px;">Click the map or enter latitude & longitude coordinates</div>
+                    </div>
+                </div>
+                <div style="background: #f0f4ff; border-radius: 10px; padding: 14px; display: flex; align-items: flex-start; gap: 10px;">
+                    <span style="font-size: 22px;">🛰️</span>
+                    <div>
+                        <div style="font-weight: 700; font-size: 14px; color: #333;">Fetch Satellite Data</div>
+                        <div style="font-size: 13px; color: #666; margin-top: 2px;">Rainfall, soil moisture, elevation & slope retrieved from GEE</div>
+                    </div>
+                </div>
+                <div style="background: #f0f4ff; border-radius: 10px; padding: 14px; display: flex; align-items: flex-start; gap: 10px;">
+                    <span style="font-size: 22px;">🤖</span>
+                    <div>
+                        <div style="font-weight: 700; font-size: 14px; color: #333;">AI Prediction</div>
+                        <div style="font-size: 13px; color: #666; margin-top: 2px;">ML model calculates flood probability from 0% to 100%</div>
+                    </div>
+                </div>
+                <div style="background: #f0f4ff; border-radius: 10px; padding: 14px; display: flex; align-items: flex-start; gap: 10px;">
+                    <span style="font-size: 22px;">📧</span>
+                    <div>
+                        <div style="font-weight: 700; font-size: 14px; color: #333;">Email Alert</div>
+                        <div style="font-size: 13px; color: #666; margin-top: 2px;">High risk predictions trigger an alert to your registered email</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Parameter Thresholds Info -->
+        <div style="
+            background: white;
+            border-radius: 16px;
+            padding: 28px 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border-left: 5px solid #48bb78;
+        ">
+            <h2 style="margin: 0 0 6px 0; font-size: 18px; color: #2d3748;">📊 Parameter Flood Risk Thresholds</h2>
+            <p style="margin: 0 0 20px 0; color: #777; font-size: 14px;">Understanding what each value means — when is a location at risk?</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+
+                <!-- Rainfall -->
+                <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <span style="font-size: 24px;">🌧️</span>
+                        <div>
+                            <div style="font-weight: 700; font-size: 15px; color: #2d3748;">7-Day Rainfall</div>
+                            <div style="font-size: 12px; color: #888;">Cumulative precipitation (mm)</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #f0fff4; padding: 6px 10px; border-radius: 6px;">
+                            <span style="color: #276749; font-weight: 600;">✅ Safe</span>
+                            <span style="color: #555;">&lt; 50 mm</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #fffbeb; padding: 6px 10px; border-radius: 6px;">
+                            <span style="color: #b7791f; font-weight: 600;">⚠️ Moderate</span>
+                            <span style="color: #555;">50 – 100 mm</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff5f5; padding: 6px 10px; border-radius: 6px;">
+                            <span style="color: #c53030; font-weight: 600;">🔴 High Risk</span>
+                            <span style="color: #555;">&gt; 100 mm</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Soil Moisture -->
+                <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <span style="font-size: 24px;">💧</span>
+                        <div>
+                            <div style="font-weight: 700; font-size: 15px; color: #2d3748;">Soil Moisture</div>
+                            <div style="font-size: 12px; color: #888;">Volumetric water content (m³/m³)</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #f0fff4; padding: 6px 10px; border-radius: 6px;">
+                            <span style="color: #276749; font-weight: 600;">✅ Safe</span>
+                            <span style="color: #555;">&lt; 0.30 m³/m³</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #fffbeb; padding: 6px 10px; border-radius: 6px;">
+                            <span style="color: #b7791f; font-weight: 600;">⚠️ Moderate</span>
+                            <span style="color: #555;">0.30 – 0.45 m³/m³</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff5f5; padding: 6px 10px; border-radius: 6px;">
+                            <span style="color: #c53030; font-weight: 600;">🔴 High Risk</span>
+                            <span style="color: #555;">&gt; 0.45 m³/m³</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Elevation -->
+                <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <span style="font-size: 24px;">⛰️</span>
+                        <div>
+                            <div style="font-weight: 700; font-size: 15px; color: #2d3748;">Elevation</div>
+                            <div style="font-size: 12px; color: #888;">Height above sea level (m)</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff5f5; padding: 6px 10px; border-radius: 6px;">
+                            <span style="color: #c53030; font-weight: 600;">🔴 High Risk</span>
+                            <span style="color: #555;">&lt; 20 m</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #fffbeb; padding: 6px 10px; border-radius: 6px;">
+                            <span style="color: #b7791f; font-weight: 600;">⚠️ Moderate</span>
+                            <span style="color: #555;">20 – 50 m</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #f0fff4; padding: 6px 10px; border-radius: 6px;">
+                            <span style="color: #276749; font-weight: 600;">✅ Safe</span>
+                            <span style="color: #555;">&gt; 50 m</span>
+                        </div>
+                    </div>
+                    <p style="margin: 10px 0 0 0; font-size: 11px; color: #999;">Low-lying areas accumulate water during heavy rainfall events</p>
+                </div>
+
+                <!-- Slope -->
+                <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <span style="font-size: 24px;">📐</span>
+                        <div>
+                            <div style="font-weight: 700; font-size: 15px; color: #2d3748;">Terrain Slope</div>
+                            <div style="font-size: 12px; color: #888;">Ground inclination (degrees)</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff5f5; padding: 6px 10px; border-radius: 6px;">
+                            <span style="color: #c53030; font-weight: 600;">🔴 High Risk</span>
+                            <span style="color: #555;">&lt; 2°</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #fffbeb; padding: 6px 10px; border-radius: 6px;">
+                            <span style="color: #b7791f; font-weight: 600;">⚠️ Moderate</span>
+                            <span style="color: #555;">2° – 5°</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #f0fff4; padding: 6px 10px; border-radius: 6px;">
+                            <span style="color: #276749; font-weight: 600;">✅ Safe</span>
+                            <span style="color: #555;">&gt; 5°</span>
+                        </div>
+                    </div>
+                    <p style="margin: 10px 0 0 0; font-size: 11px; color: #999;">Flat terrain cannot drain water, increasing inundation risk</p>
+                </div>
+
+            </div>
+
+            <!-- Risk Level Legend -->
+            <div style="margin-top: 18px; padding: 14px 16px; background: #f7fafc; border-radius: 10px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
+                <span style="font-size: 13px; font-weight: 700; color: #444;">Overall Risk Score:</span>
+                <span style="font-size: 13px; background: #f0fff4; color: #276749; padding: 4px 12px; border-radius: 20px; font-weight: 600;">🟢 LOW &lt; 40%</span>
+                <span style="font-size: 13px; background: #fffbeb; color: #b7791f; padding: 4px 12px; border-radius: 20px; font-weight: 600;">🟡 MEDIUM 40% – 70%</span>
+                <span style="font-size: 13px; background: #fff5f5; color: #c53030; padding: 4px 12px; border-radius: 20px; font-weight: 600;">🔴 HIGH &gt; 70%</span>
+                <span style="font-size: 13px; color: #888; margin-left: auto;">📧 Email alert sent when risk ≥ 50%</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel: Input & Results -->
+            <div class="left-panel">
+                <!-- Input Section -->
+                <div class="card">
+                    <h2>📍 Select Location</h2>
+                    
+                    <div class="input-group">
+                        <label>Latitude</label>
+                        <input type="number" id="latitude" placeholder="e.g., 17.385" step="0.0001" value="17.385">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Longitude</label>
+                        <input type="number" id="longitude" placeholder="e.g., 78.4867" step="0.0001" value="78.4867">
+                    </div>
+                    
+                    <button id="predictBtn" class="btn-primary">
+                        🔍 Predict Flood Risk
+                    </button>
+                    
+                    <div class="quick-locations">
+                        <p><strong>Quick Select:</strong></p>
+                        <button class="btn-secondary" onclick="selectLocation(17.385, 78.4867, 'Hyderabad')">Hyderabad</button>
+                        <button class="btn-secondary" onclick="selectLocation(19.076, 72.8777, 'Mumbai')">Mumbai</button>
+                        <button class="btn-secondary" onclick="selectLocation(13.0827, 80.2707, 'Chennai')">Chennai</button>
+                        <button class="btn-secondary" onclick="selectLocation(28.7041, 77.1025, 'Delhi')">Delhi</button>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div class="card results-card" id="resultsCard" style="display: none;">
+                    <h2>📊 Prediction Results</h2>
+                    
+                    <div class="risk-indicator" id="riskIndicator">
+                        <div class="risk-gauge">
+                            <div class="gauge-fill" id="gaugeFill"></div>
+                        </div>
+                        <div class="risk-percentage" id="riskPercentage">--</div>
+                    </div>
+                    
+                    <div class="risk-badge" id="riskBadge">
+                        <span id="riskLevel">LOADING...</span>
+                    </div>
+                    
+                    <div class="features-grid">
+                        <div class="feature-item">
+                            <div class="feature-icon">🌧️</div>
+                            <div class="feature-label">Rainfall</div>
+                            <div class="feature-value" id="rainfall">-- mm</div>
+                        </div>
+                        
+                        <div class="feature-item">
+                            <div class="feature-icon">💧</div>
+                            <div class="feature-label">Soil Moisture</div>
+                            <div class="feature-value" id="soilMoisture">-- m³/m³</div>
+                        </div>
+                        
+                        <div class="feature-item">
+                            <div class="feature-icon">⛰️</div>
+                            <div class="feature-label">Elevation</div>
+                            <div class="feature-value" id="elevation">-- m</div>
+                        </div>
+                        
+                        <div class="feature-item">
+                            <div class="feature-icon">📐</div>
+                            <div class="feature-label">Slope</div>
+                            <div class="feature-value" id="slope">--°</div>
+                        </div>
+                    </div>
+                    
+                    <div class="date-range" id="dateRange">
+                        Data: <span id="dateInfo">--</span>
+                    </div>
+                </div>
+
+                <!-- Loading Indicator -->
+                <div class="card loading-card" id="loadingCard" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <p>Analyzing satellite data...</p>
+                </div>
+            </div>
+
+            <!-- Right Panel: Map -->
+            <div class="right-panel">
+                <div class="card map-card">
+                    <h2>🗺️ Interactive Map</h2>
+                    <div id="map"></div>
+                    <div class="map-legend">
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #4ade80;"></span>
+                            <span>Low Risk</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #fbbf24;"></span>
+                            <span>Medium Risk</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #ef4444;"></span>
+                            <span>High Risk</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>🎓 Academic Project | Powered by Google Earth Engine & Machine Learning</p>
+        </footer>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

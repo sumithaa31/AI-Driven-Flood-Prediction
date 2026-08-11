@@ -67,3 +67,40 @@ Environmental & Geographical Data
      Risk Classification
               ↓
    Flood-Prone Area Mapping
+
+---
+
+## 📊 Data Analysis
+
+The project analyzes relevant environmental and geographical parameters that can influence flood risk, such as rainfall, elevation, slope, land use, soil characteristics, vegetation, and surface water information.
+
+These parameters can be processed and used as input features for flood-risk analysis.
+
+---
+
+## 🌍 Google Earth Engine
+
+Google Earth Engine is used for geospatial and satellite-data processing, visualization, and analysis of environmental information relevant to flood prediction.
+
+---
+
+## 🤖 Machine Learning
+
+Machine Learning techniques are used to analyze the processed environmental and geographical data and identify areas with different levels of flood vulnerability.
+
+---
+
+## 🔮 Future Scope
+
+- Real-time weather and rainfall data integration
+- Real-time flood monitoring
+- Improved Machine Learning and Deep Learning models
+- Automated flood alerts
+- Web or mobile-based flood-risk visualization
+- Integration with higher-resolution satellite imagery
+
+---
+
+## 👩‍💻 Author
+
+Sumithaa31
